@@ -2,6 +2,8 @@ import argparse
 import os
 import shutil
 import time
+
+from chromadb import Settings
 from langchain_community.document_loaders.pdf import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
@@ -11,6 +13,73 @@ import chromadb
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
+
+
+def safe_clear_database():
+    try:
+        if os.path.exists(CHROMA_PATH):
+            # Force close any existing connections
+            try:
+                client = chromadb.PersistentClient(
+                    path=CHROMA_PATH,
+                    settings=Settings(
+                        allow_reset=True,
+                        is_persistent=True
+                    )
+                )
+                client.reset()
+            except Exception as e:
+                print(f"Warning: Could not reset client: {e}")
+
+            # Wait a moment
+            time.sleep(1)
+
+            # Force delete the directory
+            try:
+                shutil.rmtree(CHROMA_PATH)
+            except Exception as e:
+                print(f"Warning: Could not remove directory: {e}")
+                # Try to remove files one by one
+                for root, dirs, files in os.walk(CHROMA_PATH, topdown=False):
+                    for name in files:
+                        try:
+                            os.remove(os.path.join(root, name))
+                        except:
+                            pass
+                    for name in dirs:
+                        try:
+                            os.rmdir(os.path.join(root, name))
+                        except:
+                            pass
+                try:
+                    os.rmdir(CHROMA_PATH)
+                except:
+                    pass
+
+            print("Database cleared successfully")
+        else:
+            print("No existing database found")
+
+    except Exception as e:
+        print(f"Error clearing database: {str(e)}")
+        raise
+
+
+
+def main():
+    # Check if the database should be cleared
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true", help="Reset the database.")
+    args = parser.parse_args()
+    if args.reset:
+        print("✨ Clearing Database")
+        safe_clear_database()
+        # clear_database()
+
+    # Create (or update) the data store
+    documents = load_documents()
+    chunks = split_documents(documents)
+    add_to_chroma(chunks)
 
 
 def load_documents():
@@ -91,3 +160,12 @@ def calculate_chunk_ids(chunks):
         chunk.metadata["id"] = chunk_id
 
     return chunks
+
+
+def clear_database():
+    if os.path.exists(CHROMA_PATH):
+        shutil.rmtree(CHROMA_PATH)
+
+
+if __name__ == "__main__":
+    main()
