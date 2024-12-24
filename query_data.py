@@ -34,14 +34,6 @@ def query_rag(query_text: str):
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
 
         # Construct prompt with context
-        # prompt = f"""Using only the following context, provide a clear and complete answer to the question.
-        # If the context doesn't contain enough information, just explain what you can find in the context.
-        #
-        # Context:
-        # {context_text}
-        #
-        # Question: {query_text}
-        # """
         prompt = f"""
                     Answer the question based only on the following context:
                     
