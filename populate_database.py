@@ -40,6 +40,38 @@ def split_documents(documents: list[Document]):
     return text_splitter.split_documents(documents)
 
 
+def add_to_chroma(chunks: list[Document]):
+    # Initialize Chroma with a specific collection name
+    client = chromadb.PersistentClient(path=CHROMA_PATH)
+
+    db = Chroma(
+        client=client,
+        collection_name="game_rules",
+        embedding_function=get_embedding_function(),
+    )
+
+    # Calculate Page IDs
+    chunks_with_ids = calculate_chunk_ids(chunks)
+
+    # Add the documents
+    existing_items = db.get()
+    existing_ids = set(existing_items["ids"])
+    print(f"Number of existing documents in DB: {len(existing_ids)}")
+
+    # Only add documents that don't exist in the DB
+    new_chunks = []
+    for chunk in chunks_with_ids:
+        if chunk.metadata["id"] not in existing_ids:
+            new_chunks.append(chunk)
+
+    if len(new_chunks):
+        print(f"👉 Adding new documents: {len(new_chunks)}")
+        new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
+        db.add_documents(new_chunks, ids=new_chunk_ids)
+    else:
+        print("✅ No new documents to add")
+
+
 def calculate_chunk_ids(chunks):
     last_page_id = None
     current_chunk_index = 0
