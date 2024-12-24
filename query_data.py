@@ -28,24 +28,33 @@ def query_rag(query_text: str):
         )
 
         # Search the DB
-        results = db.similarity_search_with_score(query_text, k=3)
+        results = db.similarity_search_with_score(query_text, k=5)
 
         # Prepare context from search results
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
 
         # Construct prompt with context
-        prompt = f"""Using only the following context, provide a clear and complete answer to the question.
-        If the context doesn't contain enough information, just explain what you can find in the context.
-
-        Context:
-        {context_text}
-
-        Question: {query_text}
-        """
+        # prompt = f"""Using only the following context, provide a clear and complete answer to the question.
+        # If the context doesn't contain enough information, just explain what you can find in the context.
+        #
+        # Context:
+        # {context_text}
+        #
+        # Question: {query_text}
+        # """
+        prompt = f"""
+                    Answer the question based only on the following context:
+                    
+                    Context:
+                    {context_text}
+                    
+                    ---
+                    
+                    Question: {query_text}
+                    """
 
         # Construct API request
         api_request_json = {
-            # "model": "llama-13b-chat",  # or your preferred model
             "model": "llama3.1-70b",
             "messages": [
                 {"role": "system",
