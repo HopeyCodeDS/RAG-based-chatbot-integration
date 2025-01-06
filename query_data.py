@@ -84,12 +84,18 @@ What would you like to know about?"""
 
 def query_rag(query_text: str):
     try:
-        # Check if it's a general query first
-        if is_general_query(query_text):
+        # Print debug info
+        # print(f"\nProcessing query: {query_text}")
+
+        # Check if it's a general query first if it's not a game query
+        if is_general_query(query_text) and not is_game_query(query_text):
+            # print("Detected as general query")
             response_text = get_general_response(query_text)
             formatted_response = f"Response: {response_text}\nSources: [conversational]"
             print(formatted_response)
             return formatted_response
+
+        # print("Searching game rules database...")
 
         # Initialize Chroma with a specific collection name
         client = chromadb.PersistentClient(path=CHROMA_PATH)
@@ -105,20 +111,20 @@ def query_rag(query_text: str):
         )
 
         # Search the DB
-        print("\n🔎 Searching database...")
+        # print("\n🔎 Searching database...")
         results = db.similarity_search_with_score(query_text, k=5)
 
         # Debug: Print search results
-        print("\n📄 Search Results:")
-        for doc, score in results:
-            print(f"\nDocument: {doc.metadata.get('source')}")
-            print(f"Score: {score}")
-            print(f"Content Preview: {doc.page_content[:150]}...")
+        # print("\n📄 Search Results:")
+        # for doc, score in results:
+        #     print(f"\nDocument: {doc.metadata.get('source')}")
+        #     print(f"Score: {score}")
+        #     print(f"Content Preview: {doc.page_content[:150]}...")
 
-        # Check if we got any relevant results
-        if not results:
-            print("\n❌ No relevant results found")
-            return get_general_response(query_text)
+        # # Check if we got any relevant results
+        # if not results:
+        #     print("\n❌ No relevant results found")
+        #     return get_general_response(query_text)
 
         # Prepare context from search results
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
