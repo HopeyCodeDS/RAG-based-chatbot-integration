@@ -32,28 +32,45 @@ def is_platform_query(query: str) -> bool:
     ]
     return any(pattern in query.lower() for pattern in platform_patterns)
 
+
 def get_general_response(query: str) -> str:
-    query_lower = query.lower()
+    query_lower = query.lower().strip('?!., ')
 
-    # Greetings
-    if any(word in query_lower for word in ['hello', 'hi', 'hey']):
-        return "Hello! I'm your Game Rules Assistant. I can help you with game rules, platform navigation, and general questions. How can I assist you today?"
+    # Greeting patterns
+    greetings = ['hello', 'hi', 'hey', 'greetings']
+    if any(greeting in query_lower for greeting in greetings):
+        return """Hello! 👋 I'm your Game Rules Assistant. I can help you with:
 
-    # Help requests
-    if any(word in query_lower for word in ['help', 'can you', 'what can you do']):
-        return """I can help you with:
-            1. Game Rules: Learn how to play various games like Chess, Monopoly, and more
-            2. Platform Navigation: Find your way around the platform
-            3. General Questions: Get assistance with using the chatbot and finding information
-            
-            What would you like to know about?"""
+1. Game Rules: Learn how to play various games
+2. Platform Navigation: Find your way around
+3. General Questions: Get help with using the platform
 
-    # Thanks
+How can I assist you today?"""
+
+    # Help patterns
+    help_patterns = ['help', 'can you', 'what can you do']
+    if any(pattern in query_lower for pattern in help_patterns):
+        return """I'd be happy to help! Here's what I can do:
+
+1. Explain game rules in detail (e.g., "How do you play Battleship?")
+2. Help navigate the platform (e.g., "How do I find a specific game?")
+3. Answer questions about game setup and gameplay
+4. Provide guidance on using the platform features
+
+What would you like to know more about?"""
+
+    # Thanks patterns
     if 'thank' in query_lower:
-        return "You're welcome! Let me know if you need anything else."
+        return "You're welcome! Feel free to ask if you need anything else. 😊"
 
     # Default response
-    return "I'm here to help with game rules and platform navigation. Could you please ask me about specific games or how to use the platform?"
+    return """Hi there! I'm your Game Rules Assistant. I can help you with:
+
+1. Learning game rules
+2. Finding your way around the platform
+3. Answering general questions
+
+What would you like to know about?"""
 
 
 
@@ -62,7 +79,9 @@ def query_rag(query_text: str):
         # Check if it's a general query first
         if is_general_query(query_text):
             response_text = get_general_response(query_text)
-            return f"Response: {response_text}\nSources: [conversational]"
+            formatted_response = f"Response: {response_text}\nSources: [conversational]"
+            print(formatted_response)
+            return formatted_response
 
         # Initialize Chroma with a specific collection name
         client = chromadb.PersistentClient(path=CHROMA_PATH)
@@ -122,8 +141,14 @@ def query_rag(query_text: str):
         return formatted_response
 
     except Exception as e:
-        print(f"Error in query_rag: {str(e)}")
-        raise
+        error_msg = f"Error in query_rag: {str(e)}"
+        print(error_msg)
+
+        # Fallback response for errors
+        fallback_response = "I'm here to help! Please feel free to ask about game rules or how to use the platform."
+        formatted_response = f"Response: {fallback_response}\nSources: [system]"
+        print(formatted_response)
+        return formatted_response
 
 
 def main():
