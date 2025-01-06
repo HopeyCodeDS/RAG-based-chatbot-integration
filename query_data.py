@@ -25,6 +25,14 @@ def is_general_query(query: str) -> bool:
     ]
     return any(pattern in query.lower() for pattern in general_patterns)
 
+def is_game_query(query: str) -> bool:
+    game_names = [
+        'battleship', 'battleships', 'chess', 'monopoly',
+        'reversi', 'tictactoe', 'tic-tac-toe'
+    ]
+    query_lower = query.lower()
+    return any(game in query_lower for game in game_names)
+
 def is_platform_query(query: str) -> bool:
     platform_patterns = [
         'how to', 'where', 'find', 'navigate', 'use', 'access',
@@ -97,7 +105,20 @@ def query_rag(query_text: str):
         )
 
         # Search the DB
+        print("\n🔎 Searching database...")
         results = db.similarity_search_with_score(query_text, k=5)
+
+        # Debug: Print search results
+        print("\n📄 Search Results:")
+        for doc, score in results:
+            print(f"\nDocument: {doc.metadata.get('source')}")
+            print(f"Score: {score}")
+            print(f"Content Preview: {doc.page_content[:150]}...")
+
+        # Check if we got any relevant results
+        if not results:
+            print("\n❌ No relevant results found")
+            return get_general_response(query_text)
 
         # Prepare context from search results
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
@@ -140,9 +161,15 @@ def query_rag(query_text: str):
         print(formatted_response)
         return formatted_response
 
+
     except Exception as e:
-        error_msg = f"Error in query_rag: {str(e)}"
+        error_msg = f"\n❌ Error in query_rag: {str(e)}"
         print(error_msg)
+
+        # Print full error details
+        import traceback
+        print("\nFull error details:")
+        print(traceback.format_exc())
 
         # Fallback response for errors
         fallback_response = "I'm here to help! Please feel free to ask about game rules or how to use the platform."
