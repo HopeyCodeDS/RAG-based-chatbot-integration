@@ -1,0 +1,17 @@
+pypdf
+langchain
+chromadb # Vector storage
+pytest
+boto3
+uvicorn==0.24.0
+redis
+fastapi-limiter==0.1.5
+python-dotenv==1.0.0
+langchain==0.0.325
+langchain-community==0.0.6
+langchain-core==0.1.3
+chromadb==0.4.15
+llamaapi
+pydantic
+python-multipart==0.0.6
+gunicorn==21.2.0
