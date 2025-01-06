@@ -1,0 +1,11 @@
+# Health check
+#curl http://localhost:8000/health
+
+
+# Chat request
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "What is the monopoly game all about?"
+}
