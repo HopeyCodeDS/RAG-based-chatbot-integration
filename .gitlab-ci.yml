@@ -1,0 +1,68 @@
+image: python:3.9
+
+variables:
+  AZURE_WEBAPP_NAME: "platform-chatbot"
+  AZURE_RESOURCE_GROUP: "game-analytics-rg"
+
+stages:
+  - test
+  - build
+  - deploy
+
+before_script:
+  - python -V
+  - pip install -r requirements.txt
+
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    # Add your test commands here
+  only:
+    - main
+    - merge_requests
+
+build:
+  stage: build
+  script:
+    - echo "Building application..."
+    - pip install -r requirements.txt
+  artifacts:
+    paths:
+      - app/
+      - data/
+      - requirements.txt
+      - query_data.py
+      - populate_database.py
+      - get_embedding_function.py
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - echo "Deploying to Azure App Service..."
+    # Login using your existing service principal credentials
+    - az login --service-principal 
+      --username $AZURE_SP_ID 
+      --password $AZURE_SP_PASSWORD 
+      --tenant $AZURE_TENANT_ID
+
+    # Deploy to Azure App Service
+    - az webapp deployment source config-zip 
+      --resource-group $AZURE_RESOURCE_GROUP 
+      --name $AZURE_WEBAPP_NAME 
+      --src deployment.zip
+
+    # Set the startup command
+    - |
+      az webapp config set \
+        --resource-group $AZURE_RESOURCE_GROUP \
+        --name $AZURE_WEBAPP_NAME \
+        --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8012"
+  environment:
+    name: production
+    url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
+  only:
+    - main
