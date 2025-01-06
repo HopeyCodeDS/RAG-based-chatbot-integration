@@ -1,4 +1,7 @@
 *.pyc
 .DS_Store
 backup
-chroma
+chroma/
+.env
+.venv/
+__pycache__/
