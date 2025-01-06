@@ -12,7 +12,9 @@ from langchain_chroma import Chroma
 import chromadb
 
 CHROMA_PATH = "chroma"
-DATA_PATH = "data"
+GAME_RULES_PATH = "data/game_rules"
+PLATFORM_DOCS_PATH = "data/platform_docs"
+FAQ_PATH = "data/faqs"
 
 
 def safe_clear_database():
@@ -65,36 +67,19 @@ def safe_clear_database():
         raise
 
 
-
-def main():
-    # Check if the database should be cleared
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="Reset the database.")
-    args = parser.parse_args()
-    if args.reset:
-        print("✨ Clearing Database")
-        safe_clear_database()
-        # clear_database()
-
-    # Create (or update) the data store
-    documents = load_documents()
-    chunks = split_documents(documents)
-    add_to_chroma(chunks)
-
-
-def load_documents():
-    print("📚 Loading documents from:", DATA_PATH)
-    document_loader = PyPDFDirectoryLoader(DATA_PATH)
+def load_documents_by_type(path: str, doc_type: str):
+    print(f"📚 Loading {doc_type} documents from:", path)
+    document_loader = PyPDFDirectoryLoader(path)
     documents = document_loader.load()
 
-    print("\nLoaded files:")
+    print(f"\nLoaded {doc_type} files:")
     sources = set()
     for doc in documents:
         source = doc.metadata.get("source", "Unknown")
         if source not in sources:
             sources.add(source)
             print(f"- {source}")
-    print(f"\nTotal documents loaded: {len(documents)}")
+    print(f"\nTotal {doc_type} documents loaded: {len(documents)}")
 
     return documents
 
@@ -109,13 +94,13 @@ def split_documents(documents: list[Document]):
     return text_splitter.split_documents(documents)
 
 
-def add_to_chroma(chunks: list[Document]):
+def add_to_chroma(chunks: list[Document], collection_name: str):
     # Initialize Chroma with a specific collection name
     client = chromadb.PersistentClient(path=CHROMA_PATH)
 
     db = Chroma(
         client=client,
-        collection_name="game_rules",
+        collection_name=collection_name,
         embedding_function=get_embedding_function(),
     )
 
@@ -125,7 +110,7 @@ def add_to_chroma(chunks: list[Document]):
     # Add the documents
     existing_items = db.get()
     existing_ids = set(existing_items["ids"])
-    print(f"Number of existing documents in DB: {len(existing_ids)}")
+    print(f"Number of existing documents in {collection_name}: {len(existing_ids)}")
 
     # Only add documents that don't exist in the DB
     new_chunks = []
@@ -160,6 +145,43 @@ def calculate_chunk_ids(chunks):
         chunk.metadata["id"] = chunk_id
 
     return chunks
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true", help="Reset the database.")
+    args = parser.parse_args()
+
+    if args.reset:
+        print("✨ Clearing Database")
+        if os.path.exists(CHROMA_PATH):
+            shutil.rmtree(CHROMA_PATH)
+
+    # Process each type of document
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=80,
+        length_function=len,
+        is_separator_regex=False,
+    )
+
+    # Load and process game rules
+    if os.path.exists(GAME_RULES_PATH):
+        game_rules = load_documents_by_type(GAME_RULES_PATH, "game rules")
+        game_chunks = text_splitter.split_documents(game_rules)
+        add_to_chroma(game_chunks, "game_rules")
+
+    # Load and process platform docs
+    if os.path.exists(PLATFORM_DOCS_PATH):
+        platform_docs = load_documents_by_type(PLATFORM_DOCS_PATH, "platform docs")
+        platform_chunks = text_splitter.split_documents(platform_docs)
+        add_to_chroma(platform_chunks, "platform_docs")
+
+    # Load and process FAQs
+    if os.path.exists(FAQ_PATH):
+        faqs = load_documents_by_type(FAQ_PATH, "FAQs")
+        faq_chunks = text_splitter.split_documents(faqs)
+        add_to_chroma(faq_chunks, "faqs")
 
 
 def clear_database():
