@@ -1,3 +1,11 @@
 #!/bin/bash
+set -x  # Enable debug mode
 cd /app
-gunicorn app.main:app --timeout 600 --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --preload --max-requests 1000
+echo "Starting gunicorn..."
+gunicorn app.main:app \
+    --workers 1 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --timeout 600 \
+    --bind 0.0.0.0:8000 \
+    --log-level debug \
+    --preload

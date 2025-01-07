@@ -17,7 +17,14 @@ COPY . .
 # Make startup script executable
 RUN chmod +x startup.sh
 
+# Pre-compile Python files
+RUN python -m compileall .
+
 EXPOSE 8000
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Use startup script as entrypoint
 CMD ["./startup.sh"]
