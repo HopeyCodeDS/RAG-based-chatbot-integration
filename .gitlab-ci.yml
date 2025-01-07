@@ -40,28 +40,17 @@ deploy:
     - echo "Deploying to Azure App Service..."
 
     # Login to Azure with proper quoting
-    - |
-      az login --service-principal \
-        --username "${AZURE_SP_ID}" \
-        --password "${AZURE_SP_PASSWORD}" \
-        --tenant "${AZURE_TENANT_ID}"
+    - az login --service-principal --username "$AZURE_SP_ID" --password "$AZURE_SP_PASSWORD" --tenant "$AZURE_TENANT_ID"
 
     # Create deployment package
+    - apt-get update && apt-get install -y zip
     - zip -r deployment.zip . -x "*.git*"
 
     # Deploy to Azure App Service
-    - |
-      az webapp deployment source config-zip \
-        --resource-group "${AZURE_RESOURCE_GROUP}" \
-        --name "${AZURE_WEBAPP_NAME}" \
-        --src deployment.zip
+    - az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src deployment.zip
 
     # Set startup command
-    - |
-      az webapp config set \
-        --resource-group "${AZURE_RESOURCE_GROUP}" \
-        --name "${AZURE_WEBAPP_NAME}" \
-        --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8012"
+    - az webapp config set --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8012"
   environment:
     name: production
     url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
