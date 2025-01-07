@@ -26,5 +26,5 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Use startup script as entrypoint
-CMD ["/app/startup.sh"]
+# Use shell form
+CMD ./startup.sh

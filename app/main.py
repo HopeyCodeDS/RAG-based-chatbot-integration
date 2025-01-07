@@ -4,6 +4,11 @@ from fastapi.responses import JSONResponse
 from app.models import ChatMessage, ChatResponse
 import traceback
 from query_data import query_rag
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -35,12 +40,17 @@ async def read_root():
 @app.post("/chat")
 async def chat_endpoint(message: ChatMessage):
     try:
+        global query_rag
+        if query_rag is None:
+            logger.info("Lazy loading query_rag...")
+            from query_data import query_rag
+
         # Print received message for debugging
-        print(f"Received message: {message.message}")
+        logger.info(f"Received message: {message.message}")
 
         # Call query_rag and get response
         response_text = query_rag(message.message)
-        print(f"Raw response: {response_text}")
+        logger.info(f"Raw response: {response_text}")
 
         # Parse the response
         parts = response_text.split("\nSources: ")
@@ -54,8 +64,8 @@ async def chat_endpoint(message: ChatMessage):
         }
 
     except Exception as e:
-        print("Error occurred:")
-        print(traceback.format_exc())
+        logger.error("Error occurred:")
+        logger.info(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 # Health check endpoint
