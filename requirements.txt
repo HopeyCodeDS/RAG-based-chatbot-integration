@@ -14,3 +14,7 @@ chromadb
 redis
 pytz
 azure-cli-core
+langchain-huggingface
+sentence-transformers
+torch
+transformers
