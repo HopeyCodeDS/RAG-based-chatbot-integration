@@ -16,6 +16,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def read_root():
+    return {"message": "Platform Chatbot API"}
 
 @app.post("/chat")
 async def chat_endpoint(message: ChatMessage):

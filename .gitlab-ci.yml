@@ -3,6 +3,9 @@ image: python:3.9
 variables:
   AZURE_WEBAPP_NAME: "platform-chatbot"
   AZURE_RESOURCE_GROUP: "game-analytics-rg"
+  DOCKER_REGISTRY: "gameanalyticsregistry.azurecr.io"
+  IMAGE_NAME: "platform-chatbot"
+  IMAGE_TAG: $CI_COMMIT_SHA
 
 stages:
   - build
@@ -15,18 +18,9 @@ before_script:
 build:
   stage: build
   script:
-    - echo "Building application..."
-    - pip install -r requirements.txt
-  artifacts:
-    paths:
-      - app/
-      - data/
-      - requirements.txt
-      - query_data.py
-      - populate_database.py
-      - get_embedding_function.py
-      - startup.sh
-      - .env
+    - docker login $DOCKER_REGISTRY -u $AZURE_REGISTRY_USERNAME -p $AZURE_REGISTRY_PASSWORD
+    - docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+    - docker push $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
   only:
     - main
 
@@ -34,43 +28,33 @@ deploy:
   stage: deploy
   image: python:3.9
   before_script:
-    # Install Azure CLI
-    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-    - python -V
-    - pip install -r requirements.txt
+    - apk add --no-cache curl py3-pip
+    - curl -sL https://aka.ms/InstallAzureCLIDeb | sh
   script:
     - echo "Deploying to Azure App Service..."
 
     # Login to Azure
     - az login --service-principal --username "$AZURE_SP_ID" --password "$AZURE_SP_PASSWORD" --tenant "$AZURE_TENANT_ID"
 
-    # Create deployment package
-    - apt-get update && apt-get install -y zip
-    - zip -r deployment.zip . -x "*.git*"
-
-    # Deploy to Azure App Service
+    # Configure web app to use container
     - |
-      for i in {1..3}; do
-        if az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src deployment.zip --timeout 1800; then
-          break
-        fi
-        echo "Deployment attempt $i failed, retrying..."
-        sleep 30
-      done
+      az webapp config container set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --docker-custom-image-name "$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+        --docker-registry-server-url "https://$DOCKER_REGISTRY" \
+        --docker-registry-server-user "$AZURE_REGISTRY_USERNAME" \
+        --docker-registry-server-password "$AZURE_REGISTRY_PASSWORD"
 
     # Configure app settings
     - |
       az webapp config appsettings set \
-      --resource-group "$AZURE_RESOURCE_GROUP" \
-      --name "$AZURE_WEBAPP_NAME" \
-      --settings WEBSITES_PORT=8000
-
-    # Set startup command
-    - |
-      az webapp config set \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
-        --startup-file "startup.sh"
+        --settings \
+          WEBSITES_PORT=8000 \
+          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true
 
   environment:
     name: production
