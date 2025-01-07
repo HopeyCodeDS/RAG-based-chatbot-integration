@@ -40,14 +40,23 @@ build:
 
 deploy:
   stage: deploy
-  image: mcr.microsoft.com/azure-cli
+  image: python:3.9
+  before_script:
+    # Install Azure CLI
+    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+    - python -V
+    - pip install -r requirements.txt
   script:
     - echo "Deploying to Azure App Service..."
-    # Login using your existing service principal credentials
+
+    # Login to Azure
     - az login --service-principal 
       --username $AZURE_SP_ID 
       --password $AZURE_SP_PASSWORD 
       --tenant $AZURE_TENANT_ID
+
+    # Create deployment package
+    - zip -r deployment.zip . -x "*.git*"
 
     # Deploy to Azure App Service
     - az webapp deployment source config-zip 
