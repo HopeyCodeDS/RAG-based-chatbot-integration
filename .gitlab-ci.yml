@@ -15,10 +15,19 @@ variables:
   DOCKER_TLS_VERIFY: 1
   DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
-#stages:
+stages:
+  - test
 #  - build
 #  - deploy
 #
+
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    # Add your test commands here
+  only:
+    - main
 #build:
 #  stage: build
 #  before_script:
