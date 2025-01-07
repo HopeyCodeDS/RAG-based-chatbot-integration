@@ -61,7 +61,7 @@ deploy:
       az webapp config set \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
-        --startup-command "gunicorn app.main:app --timeout 600 --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"
+        --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"
 
   environment:
     name: production
