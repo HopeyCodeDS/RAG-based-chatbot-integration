@@ -39,7 +39,7 @@ deploy:
   script:
     - echo "Deploying to Azure App Service..."
 
-    # Login to Azure with proper quoting
+    # Login to Azure
     - az login --service-principal --username "$AZURE_SP_ID" --password "$AZURE_SP_PASSWORD" --tenant "$AZURE_TENANT_ID"
 
     # Create deployment package
@@ -49,8 +49,20 @@ deploy:
     # Deploy to Azure App Service
     - az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src deployment.zip
 
+    # Configure app settings
+    - |
+      az webapp config appsettings set \
+      --resource-group "$AZURE_RESOURCE_GROUP" \
+      --name "$AZURE_WEBAPP_NAME" \
+      --settings WEBSITES_PORT=8000
+
     # Set startup command
-    - az webapp config set --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8012"
+    - |
+      az webapp config set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --startup-command "gunicorn app.main:app --timeout 600 --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"
+
   environment:
     name: production
     url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
