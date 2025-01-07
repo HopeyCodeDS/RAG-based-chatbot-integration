@@ -48,10 +48,18 @@ deploy:
       az webapp config container set \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
-        --docker-custom-image-name "$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
-        --docker-registry-server-url "https://$DOCKER_REGISTRY" \
-        --docker-registry-server-user "$AZURE_REGISTRY_USERNAME" \
-        --docker-registry-server-password "$AZURE_REGISTRY_PASSWORD"
+        --container-image-name "$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+        --container-registry-url "https://$DOCKER_REGISTRY" \
+        --container-registry-user "$AZURE_REGISTRY_USERNAME" \
+        --container-registry-password "$AZURE_REGISTRY_PASSWORD"
+
+    - |
+      az webapp config set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --generic-configurations '{"maxStartupTime": "1800"}' \
+        --number-of-workers 1
+
 
     # Configure app settings
     - |
@@ -61,7 +69,16 @@ deploy:
         --settings \
           WEBSITES_PORT=8000 \
           WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true
+          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
+          LLAMA_API_KEY="$LLAMA_API_KEY" \
+          DOCKER_ENABLE_CI=true
+
+    # Enable container loggin
+    - |
+      az webapp log config \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --docker-container-logging filesystem
 
   environment:
     name: production
