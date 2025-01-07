@@ -27,4 +27,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Use startup script as entrypoint
-CMD ["./startup.sh"]
+CMD ["/app/startup.sh"]
