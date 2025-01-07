@@ -1,4 +1,7 @@
-image: python:3.9
+image: docker:latest
+
+services:
+  - docker:dind
 
 variables:
   AZURE_WEBAPP_NAME: "platform-chatbot"
@@ -7,16 +10,19 @@ variables:
   IMAGE_NAME: "platform-chatbot"
   IMAGE_TAG: $CI_COMMIT_SHA
 
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+
 stages:
   - build
   - deploy
 
-before_script:
-  - python -V
-  - pip install -r requirements.txt
-
 build:
   stage: build
+  before_script:
+    - apk add --no-cache py3-pip
   script:
     - docker login $DOCKER_REGISTRY -u $AZURE_REGISTRY_USERNAME -p $AZURE_REGISTRY_PASSWORD
     - docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
@@ -28,8 +34,9 @@ deploy:
   stage: deploy
   image: python:3.9
   before_script:
-    - apk add --no-cache curl py3-pip
-    - curl -sL https://aka.ms/InstallAzureCLIDeb | sh
+    - apt-get update
+    - apt-get install -y curl
+    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
   script:
     - echo "Deploying to Azure App Service..."
 
