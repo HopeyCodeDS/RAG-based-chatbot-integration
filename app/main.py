@@ -16,6 +16,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Lazy load query_rag
+query_rag = None
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting application...")
+    try:
+        # Lazy load imports
+        logger.info("Application started successfully")
+    except Exception as e:
+        logger.error(f"Startup failed: {str(e)}")
+        raise
 @app.get("/")
 async def read_root():
     return {"message": "Platform Chatbot API"}
@@ -51,7 +63,3 @@ async def chat_endpoint(message: ChatMessage):
 async def health_check():
     return {"status": "healthy"}
 
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
