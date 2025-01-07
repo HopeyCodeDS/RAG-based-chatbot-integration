@@ -23,5 +23,14 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Use direct command
-CMD ["gunicorn", "app.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--timeout", "600", "--bind", "0.0.0.0:8000", "--log-level", "debug", "--preload"]
+# Add logging to stdout for gunicorn
+CMD gunicorn app.main:app \
+    --workers 1 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --timeout 600 \
+    --bind 0.0.0.0:8000 \
+    --log-level debug \
+    --preload \
+    --access-logfile - \
+    --error-logfile - \
+    --capture-output

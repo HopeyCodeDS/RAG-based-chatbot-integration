@@ -82,6 +82,20 @@ deploy:
         --name "$AZURE_WEBAPP_NAME" \
         --docker-container-logging filesystem
 
+    - |
+      az webapp config appsettings set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --settings \
+          WEBSITES_PORT=8000 \
+          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
+          LLAMA_API_KEY="$LLAMA_API_KEY" \
+          DOCKER_ENABLE_CI=true \
+          DOCKER_CUSTOM_IMAGE_NAME="" \
+          GUNICORN_CMD_ARGS="--log-level debug" \
+          PYTHONUNBUFFERED=1
+
   environment:
     name: production
     url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
