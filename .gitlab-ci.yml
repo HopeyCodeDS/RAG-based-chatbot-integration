@@ -25,6 +25,8 @@ build:
       - query_data.py
       - populate_database.py
       - get_embedding_function.py
+      - startup.sh
+      - .env
   only:
     - main
 
@@ -47,7 +49,14 @@ deploy:
     - zip -r deployment.zip . -x "*.git*"
 
     # Deploy to Azure App Service
-    - az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src deployment.zip
+    - |
+      for i in {1..3}; do
+        if az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src deployment.zip --timeout 1800; then
+          break
+        fi
+        echo "Deployment attempt $i failed, retrying..."
+        sleep 30
+      done
 
     # Configure app settings
     - |
@@ -61,7 +70,7 @@ deploy:
       az webapp config set \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
-        --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"
+        --startup-file "startup.sh"
 
   environment:
     name: production
