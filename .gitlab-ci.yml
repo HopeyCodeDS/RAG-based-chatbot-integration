@@ -5,22 +5,12 @@ variables:
   AZURE_RESOURCE_GROUP: "game-analytics-rg"
 
 stages:
-  - test
   - build
   - deploy
 
 before_script:
   - python -V
   - pip install -r requirements.txt
-
-test:
-  stage: test
-  script:
-    - echo "Running tests..."
-    # Add your test commands here
-  only:
-    - main
-    - merge_requests
 
 build:
   stage: build
@@ -49,26 +39,28 @@ deploy:
   script:
     - echo "Deploying to Azure App Service..."
 
-    # Login to Azure
-    - az login --service-principal 
-      --username $AZURE_SP_ID 
-      --password $AZURE_SP_PASSWORD 
-      --tenant $AZURE_TENANT_ID
+    # Login to Azure with proper quoting
+    - |
+      az login --service-principal \
+        --username "${AZURE_SP_ID}" \
+        --password "${AZURE_SP_PASSWORD}" \
+        --tenant "${AZURE_TENANT_ID}"
 
     # Create deployment package
     - zip -r deployment.zip . -x "*.git*"
 
     # Deploy to Azure App Service
-    - az webapp deployment source config-zip 
-      --resource-group $AZURE_RESOURCE_GROUP 
-      --name $AZURE_WEBAPP_NAME 
-      --src deployment.zip
+    - |
+      az webapp deployment source config-zip \
+        --resource-group "${AZURE_RESOURCE_GROUP}" \
+        --name "${AZURE_WEBAPP_NAME}" \
+        --src deployment.zip
 
-    # Set the startup command
+    # Set startup command
     - |
       az webapp config set \
-        --resource-group $AZURE_RESOURCE_GROUP \
-        --name $AZURE_WEBAPP_NAME \
+        --resource-group "${AZURE_RESOURCE_GROUP}" \
+        --name "${AZURE_WEBAPP_NAME}" \
         --startup-file "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8012"
   environment:
     name: production
