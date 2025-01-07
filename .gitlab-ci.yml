@@ -53,14 +53,14 @@ deploy:
         --container-registry-user "$AZURE_REGISTRY_USERNAME" \
         --container-registry-password "$AZURE_REGISTRY_PASSWORD"
       
-      # Set the startup command explicitly
-      - |
-        az webapp config set \
-          --resource-group "$AZURE_RESOURCE_GROUP" \
-          --name "$AZURE_WEBAPP_NAME" \
-          --generic-configurations '{"maxStartupTime": "1800"}' \
-          --number-of-workers 1 \
-          --startup-file "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload"
+    # Set the startup command explicitly
+    - |
+      az webapp config set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --generic-configurations '{"maxStartupTime": "1800"}' \
+        --number-of-workers 1 \
+        --startup-file "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload"
     
 
     # Configure app settings
