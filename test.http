@@ -30,5 +30,5 @@ POST https://platform-chatbot.azurewebsites.net/chat
 Content-Type: application/json
 
 {
-    "message": "What are the rules of chess?"
+    "message": "How can I use the registration page?"
 }

@@ -1,12 +1,10 @@
 import argparse
 from http.client import responses
-
 from llamaapi import LlamaAPI
 from langchain_chroma import Chroma
 import chromadb
 import os
 from dotenv import load_dotenv
-
 from get_embedding_function import get_embedding_function
 
 # Load environment variables
