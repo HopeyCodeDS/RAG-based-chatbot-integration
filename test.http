@@ -30,5 +30,5 @@ POST https://platform-chatbot.azurewebsites.net/chat
 Content-Type: application/json
 
 {
-    "message": "How can I use the registration page?"
+    "message": "Who is the best footballer in the World?"
 }
