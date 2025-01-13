@@ -15,7 +15,64 @@ Content-Type: application/json
   "message": "What is the monopoly game all about?"
 }
 
+###########################
 
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "How do you play Battleship?"
+}
+
+###########################
+
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "How can a new user create an account on the platform?"
+}
+
+###########################
+
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "what is the objective of the battleship game?"
+}
+
+###########################
+
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "what is the basic opening strategy in chess?"
+}
+
+
+###########################
+
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "What is your favorite colour?"
+}
+
+###########################
+
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "message": "How can I buy a game?"
+}
+
+### "message": "Hello?"
+###  "message": "How are you?"
+###  "message": "How can I add a new game?"
 #####################
 #    PRODUCTION     #
 #####################
@@ -31,4 +88,20 @@ Content-Type: application/json
 
 {
     "message": "Who is the best footballer in the World?"
+}
+
+#####################
+POST https://platform-chatbot.azurewebsites.net/chat
+Content-Type: application/json
+
+{
+    "message": "How do I register a new user?"
+}
+
+#####################
+POST https://platform-chatbot.azurewebsites.net/chat
+Content-Type: application/json
+
+{
+    "message": "what is the objective of the battleship game?"
 }

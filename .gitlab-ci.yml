@@ -17,9 +17,8 @@ variables:
 
 stages:
   - test
-#  - build
-#  - deploy
-#
+  - build
+  - deploy
 
 test:
   stage: test
@@ -28,85 +27,85 @@ test:
     # Add your test commands here
   only:
     - main
-#build:
-#  stage: build
-#  before_script:
-#    - apk add --no-cache py3-pip
-#  script:
-#    - docker login $DOCKER_REGISTRY -u $AZURE_REGISTRY_USERNAME -p $AZURE_REGISTRY_PASSWORD
-#    - docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-#    - docker push $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-#  only:
-#    - main
-#
-#deploy:
-#  stage: deploy
-#  image: python:3.9
-#  before_script:
-#    - apt-get update
-#    - apt-get install -y curl
-#    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-#  script:
-#    - echo "Deploying to Azure App Service..."
-#
-#    # Login to Azure
-#    - az login --service-principal --username "$AZURE_SP_ID" --password "$AZURE_SP_PASSWORD" --tenant "$AZURE_TENANT_ID"
-#
-#    # Configure web app to use container
-#    - |
-#      az webapp config container set \
-#        --resource-group "$AZURE_RESOURCE_GROUP" \
-#        --name "$AZURE_WEBAPP_NAME" \
-#        --container-image-name "$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
-#        --container-registry-url "https://$DOCKER_REGISTRY" \
-#        --container-registry-user "$AZURE_REGISTRY_USERNAME" \
-#        --container-registry-password "$AZURE_REGISTRY_PASSWORD"
-#
-#    # Set the startup command explicitly
-#    - |
-#      az webapp config set \
-#        --resource-group "$AZURE_RESOURCE_GROUP" \
-#        --name "$AZURE_WEBAPP_NAME" \
-#        --generic-configurations '{"maxStartupTime": "1800"}' \
-#        --number-of-workers 1 \
-#        --startup-file "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload"
-#
-#
-#    # Configure app settings
-#    - |
-#      az webapp config appsettings set \
-#        --resource-group "$AZURE_RESOURCE_GROUP" \
-#        --name "$AZURE_WEBAPP_NAME" \
-#        --settings \
-#          WEBSITES_PORT=8000 \
-#          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-#          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
-#          LLAMA_API_KEY="$LLAMA_API_KEY" \
-#          DOCKER_ENABLE_CI=true
-#
-#    # Enable container loggin
-#    - |
-#      az webapp log config \
-#        --resource-group "$AZURE_RESOURCE_GROUP" \
-#        --name "$AZURE_WEBAPP_NAME" \
-#        --docker-container-logging filesystem
-#
-#    - |
-#      az webapp config appsettings set \
-#        --resource-group "$AZURE_RESOURCE_GROUP" \
-#        --name "$AZURE_WEBAPP_NAME" \
-#        --settings \
-#          WEBSITES_PORT=8000 \
-#          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-#          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
-#          LLAMA_API_KEY="$LLAMA_API_KEY" \
-#          DOCKER_ENABLE_CI=true \
-#          DOCKER_CUSTOM_IMAGE_NAME="" \
-#          GUNICORN_CMD_ARGS="--log-level debug" \
-#          PYTHONUNBUFFERED=1
-#
-#  environment:
-#    name: production
-#    url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
-#  only:
-#    - main
+build:
+  stage: build
+  before_script:
+    - apk add --no-cache py3-pip
+  script:
+    - docker login $DOCKER_REGISTRY -u $AZURE_REGISTRY_USERNAME -p $AZURE_REGISTRY_PASSWORD
+    - docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+    - docker push $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: python:3.9
+  before_script:
+    - apt-get update
+    - apt-get install -y curl
+    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+  script:
+    - echo "Deploying to Azure App Service..."
+
+    # Login to Azure
+    - az login --service-principal --username "$AZURE_SP_ID" --password "$AZURE_SP_PASSWORD" --tenant "$AZURE_TENANT_ID"
+
+    # Configure web app to use container
+    - |
+      az webapp config container set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --container-image-name "$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+        --container-registry-url "https://$DOCKER_REGISTRY" \
+        --container-registry-user "$AZURE_REGISTRY_USERNAME" \
+        --container-registry-password "$AZURE_REGISTRY_PASSWORD"
+
+    # Set the startup command explicitly
+    - |
+      az webapp config set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --generic-configurations '{"maxStartupTime": "1800"}' \
+        --number-of-workers 1 \
+        --startup-file "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload"
+
+
+    # Configure app settings
+    - |
+      az webapp config appsettings set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --settings \
+          WEBSITES_PORT=8000 \
+          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
+          LLAMA_API_KEY="$LLAMA_API_KEY" \
+          DOCKER_ENABLE_CI=true
+
+    # Enable container loggin
+    - |
+      az webapp log config \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --docker-container-logging filesystem
+
+    - |
+      az webapp config appsettings set \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --settings \
+          WEBSITES_PORT=8000 \
+          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
+          LLAMA_API_KEY="$LLAMA_API_KEY" \
+          DOCKER_ENABLE_CI=true \
+          DOCKER_CUSTOM_IMAGE_NAME="" \
+          GUNICORN_CMD_ARGS="--log-level debug" \
+          PYTHONUNBUFFERED=1
+
+  environment:
+    name: production
+    url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
+  only:
+    - main

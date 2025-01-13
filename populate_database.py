@@ -1,15 +1,20 @@
 import argparse
 import os
+from typing import List
 import shutil
 import time
 
-from chromadb import Settings
 from langchain_community.document_loaders.pdf import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from get_embedding_function import get_embedding_function
 from langchain_chroma import Chroma
 import chromadb
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
@@ -33,6 +38,7 @@ def load_documents():
 
 
 def split_documents(documents: list[Document]):
+    """Split documents into chunks"""
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=800,
         chunk_overlap=80,
@@ -42,37 +48,73 @@ def split_documents(documents: list[Document]):
     return text_splitter.split_documents(documents)
 
 
-def add_to_chroma(chunks: list[Document]):
-    # Initialize Chroma with a specific collection name
+def add_to_chroma(documents: List):
+    # # Initialize Chroma with a specific collection name
+    # client = chromadb.PersistentClient(path=CHROMA_PATH)
+    #
+    # db = Chroma(
+    #     client=client,
+    #     collection_name="game_rules",
+    #     embedding_function=get_embedding_function(),
+    # )
+    #
+    # # Calculate Page IDs
+    # chunks_with_ids = calculate_chunk_ids(chunks)
+    #
+    # # Add the documents
+    # existing_items = db.get()
+    # existing_ids = set(existing_items["ids"])
+    # print(f"Number of existing documents in DB: {len(existing_ids)}")
+    #
+    # # Only add documents that don't exist in the DB
+    # new_chunks = []
+    # for chunk in chunks_with_ids:
+    #     if chunk.metadata["id"] not in existing_ids:
+    #         new_chunks.append(chunk)
+    #
+    # if len(new_chunks):
+    #     print(f"👉 Adding new documents: {len(new_chunks)}")
+    #     new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
+    #     db.add_documents(new_chunks, ids=new_chunk_ids)
+    # else:
+    #     print("✅ No new documents to add")
     client = chromadb.PersistentClient(path=CHROMA_PATH)
+    embedding_function = get_embedding_function()
 
-    db = Chroma(
-        client=client,
-        collection_name="game_rules",
-        embedding_function=get_embedding_function(),
-    )
+    # Separate documents by type
+    game_docs = []
+    platform_docs = []
 
-    # Calculate Page IDs
-    chunks_with_ids = calculate_chunk_ids(chunks)
+    for doc in documents:
+        source_path = doc.metadata['source']
+        if 'game_rules' in source_path:
+            game_docs.append(doc)
+        elif 'platform_docs' in source_path:
+            platform_docs.append(doc)
 
-    # Add the documents
-    existing_items = db.get()
-    existing_ids = set(existing_items["ids"])
-    print(f"Number of existing documents in DB: {len(existing_ids)}")
+    logger.info(f"Found {len(game_docs)} game documents and {len(platform_docs)} platform documents")
 
-    # Only add documents that don't exist in the DB
-    new_chunks = []
-    for chunk in chunks_with_ids:
-        if chunk.metadata["id"] not in existing_ids:
-            new_chunks.append(chunk)
+    # Handle game rules documents
+    if game_docs:
+        # Use Langchain's Chroma wrapper
+        game_db = Chroma(
+            client=client,
+            collection_name="game_rules",
+            embedding_function=embedding_function,
+        )
+        game_db.add_documents(game_docs)
+        logger.info(f"Added {len(game_docs)} documents to game_rules collection")
 
-    if len(new_chunks):
-        print(f"👉 Adding new documents: {len(new_chunks)}")
-        new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
-        db.add_documents(new_chunks, ids=new_chunk_ids)
-    else:
-        print("✅ No new documents to add")
-
+    # Handle platform documents
+    if platform_docs:
+        # Use Langchain's Chroma wrapper
+        platform_db = Chroma(
+            client=client,
+            collection_name="platform_docs",
+            embedding_function=embedding_function,
+        )
+        platform_db.add_documents(platform_docs)
+        logger.info(f"Added {len(platform_docs)} documents to platform_docs collection")
 
 def calculate_chunk_ids(chunks):
     last_page_id = None

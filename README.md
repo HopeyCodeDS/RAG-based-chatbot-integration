@@ -47,13 +47,13 @@ The Platform Chatbot project has the following structure:
 chatbot/
 ├── app/
 │   ├── main.py
-│   ├── models.py
-│   └
+│   └── models.py
 ├── data/
 │   ├── game_rules/
 │   └── platform_docs/
 ├── get_embedding_function.py
-
+├── query_data.py
+├── populate_database.py
 ├── Dockerfile
 ├── requirements.txt
 └── .gitlab-ci.yml
@@ -61,9 +61,10 @@ chatbot/
 
 - `app/main.py`: The main entry point of the application, handling API requests and responses.
 - `app/models.py`: Defines the data models used in the application.
-- `app/query_data.py`: Handles the logic for querying and retrieving information, such as game rules.
 - `data/`: Contains the data files used by the application, including game rules and platform documentation.
 - `get_embedding_function.py`: Defines the function for generating text embeddings using the HuggingFace Sentence Transformers.
+- `query_data.py`: Handles the logic for querying and retrieving information, such as game rules.
+- `populate_database.py`: 
 - `Dockerfile`: Defines the Docker image for the application.
 - `requirements.txt`: Lists the Python dependencies required for the project.
 - `.gitlab-ci.yml`: Defines the GitLab CI/CD pipeline for building and deploying the application.
@@ -87,4 +88,4 @@ If you would like to contribute to the development of the Platform Chatbot, plea
 
 ## Contact
 
-Team 7
+Team 7 - Integration 5
