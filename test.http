@@ -87,7 +87,7 @@ POST https://platform-chatbot.azurewebsites.net/chat
 Content-Type: application/json
 
 {
-    "message": "Who is the best footballer in the World?"
+    "message": "How can I buy a game?"
 }
 
 #####################

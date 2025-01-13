@@ -75,7 +75,7 @@ deploy:
           LLAMA_API_KEY="$LLAMA_API_KEY" \
           DOCKER_ENABLE_CI=true
 
-    # Enable container loggin
+    # Enable container logging
     - |
       az webapp log config \
         --resource-group "$AZURE_RESOURCE_GROUP" \
@@ -94,7 +94,21 @@ deploy:
           DOCKER_ENABLE_CI=true \
           DOCKER_CUSTOM_IMAGE_NAME="" \
           GUNICORN_CMD_ARGS="--log-level debug" \
+          DATA_DIR="/app/data" \
+          CHROMA_PATH="/app/chroma" \
           PYTHONUNBUFFERED=1
+
+    # Configure persistent storage
+    - |
+      az webapp config storage-account add \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --custom-id "chromadb" \
+        --storage-type "AzureFiles" \
+        --share-name "chromadb" \
+        --mount-path "/app/chroma" \
+        --account-name "$STORAGE_ACCOUNT_NAME" \
+        --access-key "$STORAGE_ACCOUNT_KEY"
 
   environment:
     name: production

@@ -11,8 +11,14 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy data directory first (add this)
+COPY data ./data/
+
+# Copy the rest of the application code
 COPY . .
+
+# Create and set permissions for chroma directory
+RUN mkdir -p /app/chroma && chmod 777 /app/chroma
 
 # Pre-compile Python files
 RUN python -m compileall .
@@ -24,7 +30,8 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Add logging to stdout for gunicorn
-CMD gunicorn app.main:app \
+CMD python populate_database.py --reset && \
+    gunicorn app.main:app \
     --workers 1 \
     --worker-class uvicorn.workers.UvicornWorker \
     --timeout 600 \
