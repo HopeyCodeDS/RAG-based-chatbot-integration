@@ -9,6 +9,7 @@ variables:
   DOCKER_REGISTRY: "gameanalyticsregistry.azurecr.io"
   IMAGE_NAME: "platform-chatbot"
   IMAGE_TAG: $CI_COMMIT_SHA
+  STORAGE_ACCOUNT_NAME: "platformchatbotst"
 
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_HOST: tcp://docker:2376
@@ -43,6 +44,38 @@ deploy:
     # Login to Azure
     - az login --service-principal --username "$AZURE_SP_ID" --password "$AZURE_SP_PASSWORD" --tenant "$AZURE_TENANT_ID"
 
+    # Create storage account with retry logic
+    - |
+      echo "Creating storage account..."
+      for i in {1..5}; do
+        az storage account create \
+          --name "$STORAGE_ACCOUNT_NAME" \
+          --resource-group "$AZURE_RESOURCE_GROUP" \
+          --location "westeurope" \
+          --sku Standard_LRS \
+          --kind StorageV2 \
+          --enable-large-file-share \
+          && break || sleep 30
+      done
+
+    # Get storage account key
+    - |
+      echo "Getting storage account key..."
+      export STORAGE_ACCOUNT_KEY=$(az storage account keys list \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --account-name "$STORAGE_ACCOUNT_NAME" \
+        --query '[0].value' -o tsv)
+
+    # Create file share
+    - |
+      echo "Creating file share..."
+      az storage share create \
+        --account-name "$STORAGE_ACCOUNT_NAME" \
+        --account-key "$STORAGE_ACCOUNT_KEY" \
+        --name "chromadb" \
+        --quota 1024 \
+        || true
+
     # Configure web app to use container
     - |
       az webapp config container set \
@@ -53,35 +86,29 @@ deploy:
         --container-registry-user "$AZURE_REGISTRY_USERNAME" \
         --container-registry-password "$AZURE_REGISTRY_PASSWORD"
 
-    # Set the startup command explicitly
+    # Configure storage mount
+    - |
+      echo "Configuring storage mount..."
+      az webapp config storage-account add \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --name "$AZURE_WEBAPP_NAME" \
+        --custom-id "chromadb" \
+        --storage-type "AzureFiles" \
+        --share-name "chromadb" \
+        --mount-path "/app/chroma" \
+        --account-name "$STORAGE_ACCOUNT_NAME" \
+        --query-string "$STORAGE_ACCOUNT_KEY"
+
+    # Set the startup command
     - |
       az webapp config set \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
         --generic-configurations '{"maxStartupTime": "1800"}' \
         --number-of-workers 1 \
-        --startup-file "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload"
-
+        --startup-file "python populate_database.py --reset && gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload"
 
     # Configure app settings
-    - |
-      az webapp config appsettings set \
-        --resource-group "$AZURE_RESOURCE_GROUP" \
-        --name "$AZURE_WEBAPP_NAME" \
-        --settings \
-          WEBSITES_PORT=8000 \
-          WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-          WEBSITES_ENABLE_APP_SERVICE_STORAGE=true \
-          LLAMA_API_KEY="$LLAMA_API_KEY" \
-          DOCKER_ENABLE_CI=true
-
-    # Enable container logging
-    - |
-      az webapp log config \
-        --resource-group "$AZURE_RESOURCE_GROUP" \
-        --name "$AZURE_WEBAPP_NAME" \
-        --docker-container-logging filesystem
-
     - |
       az webapp config appsettings set \
         --resource-group "$AZURE_RESOURCE_GROUP" \
@@ -96,19 +123,16 @@ deploy:
           GUNICORN_CMD_ARGS="--log-level debug" \
           DATA_DIR="/app/data" \
           CHROMA_PATH="/app/chroma" \
-          PYTHONUNBUFFERED=1
+          PYTHONUNBUFFERED=1 \
+          STORAGE_ACCOUNT_NAME="$STORAGE_ACCOUNT_NAME" \
+          STORAGE_ACCOUNT_KEY="$STORAGE_ACCOUNT_KEY"
 
-    # Configure persistent storage
+    # Enable container logging
     - |
-      az webapp config storage-account add \
+      az webapp log config \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
-        --custom-id "chromadb" \
-        --storage-type "AzureFiles" \
-        --share-name "chromadb" \
-        --mount-path "/app/chroma" \
-        --account-name "$STORAGE_ACCOUNT_NAME" \
-        --access-key "$STORAGE_ACCOUNT_KEY"
+        --docker-container-logging filesystem
 
   environment:
     name: production
