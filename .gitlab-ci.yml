@@ -61,7 +61,7 @@ deploy:
     # Get storage account key
     - |
       echo "Getting storage account key..."
-      export STORAGE_ACCOUNT_KEY=$(az storage account keys list \
+      STORAGE_KEY=$(az storage account keys list \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --account-name "$STORAGE_ACCOUNT_NAME" \
         --query '[0].value' -o tsv)
@@ -71,7 +71,7 @@ deploy:
       echo "Creating file share..."
       az storage share create \
         --account-name "$STORAGE_ACCOUNT_NAME" \
-        --account-key "$STORAGE_ACCOUNT_KEY" \
+        --account-key "$STORAGE_KEY" \
         --name "chromadb" \
         --quota 1024 \
         || true
@@ -97,7 +97,7 @@ deploy:
         --share-name "chromadb" \
         --mount-path "/app/chroma" \
         --account-name "$STORAGE_ACCOUNT_NAME" \
-        --query-string "$STORAGE_ACCOUNT_KEY"
+        --access-key "$STORAGE_KEY"
 
     # Set the startup command
     - |
@@ -125,7 +125,7 @@ deploy:
           CHROMA_PATH="/app/chroma" \
           PYTHONUNBUFFERED=1 \
           STORAGE_ACCOUNT_NAME="$STORAGE_ACCOUNT_NAME" \
-          STORAGE_ACCOUNT_KEY="$STORAGE_ACCOUNT_KEY"
+          STORAGE_ACCOUNT_KEY="$STORAGE_KEY"
 
     # Enable container logging
     - |

@@ -11,14 +11,15 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy data directory first (add this)
+# Create required directories with proper permissions
+RUN mkdir -p /app/data /app/chroma && \
+    chmod -R 777 /app/data /app/chroma
+
+# Copy data directory first
 COPY data ./data/
 
 # Copy the rest of the application code
 COPY . .
-
-# Create and set permissions for chroma directory
-RUN mkdir -p /app/chroma && chmod 777 /app/chroma
 
 # Pre-compile Python files
 RUN python -m compileall .
