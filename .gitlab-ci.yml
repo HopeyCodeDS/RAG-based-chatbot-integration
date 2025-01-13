@@ -86,10 +86,10 @@ deploy:
         --container-registry-user "$AZURE_REGISTRY_USERNAME" \
         --container-registry-password "$AZURE_REGISTRY_PASSWORD"
 
-    # Configure storage mount
+    # Configure storage mount(update)
     - |
       echo "Configuring storage mount..."
-      az webapp config storage-account add \
+      az webapp config storage-account update \
         --resource-group "$AZURE_RESOURCE_GROUP" \
         --name "$AZURE_WEBAPP_NAME" \
         --custom-id "chromadb" \
@@ -97,7 +97,16 @@ deploy:
         --share-name "chromadb" \
         --mount-path "/app/chroma" \
         --account-name "$STORAGE_ACCOUNT_NAME" \
-        --access-key "$STORAGE_KEY"
+        --access-key "$STORAGE_KEY" \
+        || az webapp config storage-account add \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
+            --custom-id "chromadb" \
+            --storage-type "AzureFiles" \
+            --share-name "chromadb" \
+            --mount-path "/app/chroma" \
+            --account-name "$STORAGE_ACCOUNT_NAME" \
+            --access-key "$STORAGE_KEY"
 
     # Set the startup command
     - |
