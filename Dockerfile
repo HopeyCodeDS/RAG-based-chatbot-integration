@@ -21,6 +21,10 @@ COPY data ./data/
 # Copy the rest of the application code
 COPY . .
 
+# Create startup script
+RUN echo '#!/bin/bash\npython populate_database.py --reset\ngunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 600 --bind 0.0.0.0:8000 --log-level debug --preload' > /app/startup.sh \
+    && chmod +x /app/startup.sh
+
 # Pre-compile Python files
 RUN python -m compileall .
 
@@ -30,15 +34,5 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Add logging to stdout for gunicorn
-CMD python populate_database.py --reset && \
-    gunicorn app.main:app \
-    --workers 1 \
-    --worker-class uvicorn.workers.UvicornWorker \
-    --timeout 600 \
-    --bind 0.0.0.0:8000 \
-    --log-level debug \
-    --preload \
-    --access-logfile - \
-    --error-logfile - \
-    --capture-output
+# Use the startup script as the CMD
+CMD ["/app/startup.sh"]
