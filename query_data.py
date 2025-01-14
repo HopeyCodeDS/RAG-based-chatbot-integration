@@ -21,25 +21,19 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Initialize LlamaAPI with error handling
-logger.info(f"Using API Key: {'*' * (len(os.getenv('LLAMA_API_KEY')) - 4)}{os.getenv('LLAMA_API_KEY')[-4:]}")
-try:
-    # Save the current event loop policy
-    original_policy = asyncio.get_event_loop_policy()
-
+def init_llama_api():
+    """Initialize LlamaAPI with proper event loop handling"""
+    logger.info(f"Using API Key: {'*' * (len(os.getenv('LLAMA_API_KEY')) - 4)}{os.getenv('LLAMA_API_KEY')[-4:]}")
     try:
-        # Temporarily switch to default policy for LlamaAPI initialization
-        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
-        llama = LlamaAPI(os.getenv('LLAMA_API_KEY'))
         if not os.getenv('LLAMA_API_KEY'):
             raise ValueError("LLAMA_API_KEY not found in environment variables")
-    finally:
-        # Restore the original policy (uvloop)
-        asyncio.set_event_loop_policy(original_policy)
+        return LlamaAPI(os.getenv('LLAMA_API_KEY'))
+    except Exception as e:
+        logger.error(f"Error initializing LlamaAPI: {str(e)}")
+        raise
 
-except Exception as e:
-    logger.error(f"Error initializing LlamaAPI: {str(e)}")
-    raise
+# Initialize LlamaAPI
+llama = init_llama_api()
 
 # Constants
 CHROMA_PATH = "chroma"
@@ -156,20 +150,19 @@ def get_general_response(query: str) -> QueryResponse:
 async def call_llama_api(api_request_json: Dict) -> Dict:
     """Make API call to LlamaAPI with retry logic and timing"""
     try:
-        start_time = time.time()     # Start timing
+        start_time = time.time()
 
-        response = await asyncio.get_event_loop().run_in_executor(
+        # Use run_in_executor to make the synchronous API call
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
             None,
-            partial(llama.run, api_request_json)
+            lambda: llama.run(api_request_json)
         )
 
-        end_time = time.time()      # End timing
-        elapsed_time = end_time - start_time        # Calculate duration
+        end_time = time.time()
+        elapsed_time = end_time - start_time
 
-        logger.info(f"API Response Time: {elapsed_time:.2f} seconds")  # Log the time
-
-        # Add these debug logs
-        # logger.info(f"API Request: {json.dumps(api_request_json, indent=2)}")
+        logger.info(f"API Response Time: {elapsed_time:.2f} seconds")
         logger.info(f"API Response Status: {response.status_code}")
         logger.info(f"API Response Content: {response.text}")
 
