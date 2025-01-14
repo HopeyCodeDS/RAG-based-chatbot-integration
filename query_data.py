@@ -1,7 +1,9 @@
+import asyncio
 import os
+from llamaapi import LlamaAPI
+
 import traceback
 from typing import Dict, List
-from llamaapi import LlamaAPI
 from langchain_chroma import Chroma
 import chromadb
 from dotenv import load_dotenv
@@ -9,7 +11,6 @@ from get_embedding_function import get_embedding_function
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 import json
-import asyncio
 from functools import partial
 import time
 
@@ -23,9 +24,19 @@ load_dotenv()
 # Initialize LlamaAPI with error handling
 logger.info(f"Using API Key: {'*' * (len(os.getenv('LLAMA_API_KEY')) - 4)}{os.getenv('LLAMA_API_KEY')[-4:]}")
 try:
-    llama = LlamaAPI(os.getenv('LLAMA_API_KEY'))
-    if not os.getenv('LLAMA_API_KEY'):
-        raise ValueError("LLAMA_API_KEY not found in environment variables")
+    # Save the current event loop policy
+    original_policy = asyncio.get_event_loop_policy()
+
+    try:
+        # Temporarily switch to default policy for LlamaAPI initialization
+        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+        llama = LlamaAPI(os.getenv('LLAMA_API_KEY'))
+        if not os.getenv('LLAMA_API_KEY'):
+            raise ValueError("LLAMA_API_KEY not found in environment variables")
+    finally:
+        # Restore the original policy (uvloop)
+        asyncio.set_event_loop_policy(original_policy)
+
 except Exception as e:
     logger.error(f"Error initializing LlamaAPI: {str(e)}")
     raise
