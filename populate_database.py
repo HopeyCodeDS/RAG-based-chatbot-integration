@@ -1,5 +1,5 @@
-import argparse
 import os
+import traceback
 from typing import List
 import shutil
 import time
@@ -13,148 +13,151 @@ import chromadb
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
 
 
+def safe_remove_dir_contents(directory: str):
+    """Safely remove directory contents without removing the directory itself"""
+    logger.info(f"Attempting to clear contents of {directory}")
+    try:
+        if os.path.exists(directory):
+            for item in os.listdir(directory):
+                item_path = os.path.join(directory, item)
+                try:
+                    if os.path.isfile(item_path):
+                        os.unlink(item_path)
+                        logger.info(f"Removed file: {item_path}")
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                        logger.info(f"Removed directory: {item_path}")
+                except Exception as e:
+                    logger.warning(f"Could not remove {item_path}: {e}")
+    except Exception as e:
+        logger.warning(f"Error clearing directory {directory}: {e}")
+
+
 def load_documents():
-    print("📚 Loading documents from:", DATA_PATH)
-    document_loader = PyPDFDirectoryLoader(DATA_PATH)
-    documents = document_loader.load()
+    """Load documents from the data directory"""
+    logger.info(f"📚 Loading documents from: {DATA_PATH}")
+    try:
+        document_loader = PyPDFDirectoryLoader(DATA_PATH)
+        documents = document_loader.load()
 
-    print("\nLoaded files:")
-    sources = set()
-    for doc in documents:
-        source = doc.metadata.get("source", "Unknown")
-        if source not in sources:
-            sources.add(source)
-            print(f"- {source}")
-    print(f"\nTotal documents loaded: {len(documents)}")
+        logger.info("\nLoaded files:")
+        sources = set()
+        for doc in documents:
+            source = doc.metadata.get("source", "Unknown")
+            if source not in sources:
+                sources.add(source)
+                logger.info(f"- {source}")
+        logger.info(f"\nTotal documents loaded: {len(documents)}")
 
-    return documents
+        return documents
+    except Exception as e:
+        logger.error(f"Error loading documents: {e}")
+        raise
 
 
 def split_documents(documents: list[Document]):
     """Split documents into chunks"""
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=80,
-        length_function=len,
-        is_separator_regex=False,
-    )
-    return text_splitter.split_documents(documents)
-
-
-def add_to_chroma(documents: List):
-    # # Initialize Chroma with a specific collection name
-    # client = chromadb.PersistentClient(path=CHROMA_PATH)
-    #
-    # db = Chroma(
-    #     client=client,
-    #     collection_name="game_rules",
-    #     embedding_function=get_embedding_function(),
-    # )
-    #
-    # # Calculate Page IDs
-    # chunks_with_ids = calculate_chunk_ids(chunks)
-    #
-    # # Add the documents
-    # existing_items = db.get()
-    # existing_ids = set(existing_items["ids"])
-    # print(f"Number of existing documents in DB: {len(existing_ids)}")
-    #
-    # # Only add documents that don't exist in the DB
-    # new_chunks = []
-    # for chunk in chunks_with_ids:
-    #     if chunk.metadata["id"] not in existing_ids:
-    #         new_chunks.append(chunk)
-    #
-    # if len(new_chunks):
-    #     print(f"👉 Adding new documents: {len(new_chunks)}")
-    #     new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
-    #     db.add_documents(new_chunks, ids=new_chunk_ids)
-    # else:
-    #     print("✅ No new documents to add")
-    client = chromadb.PersistentClient(path=CHROMA_PATH)
-    embedding_function = get_embedding_function()
-
-    # Separate documents by type
-    game_docs = []
-    platform_docs = []
-
-    for doc in documents:
-        source_path = doc.metadata['source']
-        if 'game_rules' in source_path:
-            game_docs.append(doc)
-        elif 'platform_docs' in source_path:
-            platform_docs.append(doc)
-
-    logger.info(f"Found {len(game_docs)} game documents and {len(platform_docs)} platform documents")
-
-    # Handle game rules documents
-    if game_docs:
-        # Use Langchain's Chroma wrapper
-        game_db = Chroma(
-            client=client,
-            collection_name="game_rules",
-            embedding_function=embedding_function,
+    try:
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=800,
+            chunk_overlap=80,
+            length_function=len,
+            is_separator_regex=False,
         )
-        game_db.add_documents(game_docs)
-        logger.info(f"Added {len(game_docs)} documents to game_rules collection")
+        return text_splitter.split_documents(documents)
+    except Exception as e:
+        logger.error(f"Error splitting documents: {e}")
+        raise
 
-    # Handle platform documents
-    if platform_docs:
-        # Use Langchain's Chroma wrapper
-        platform_db = Chroma(
-            client=client,
-            collection_name="platform_docs",
-            embedding_function=embedding_function,
-        )
-        platform_db.add_documents(platform_docs)
-        logger.info(f"Added {len(platform_docs)} documents to platform_docs collection")
 
-def calculate_chunk_ids(chunks):
-    last_page_id = None
-    current_chunk_index = 0
+def add_to_chroma(documents: List) -> None:
+    """Add documents to Chroma collections based on their source paths"""
+    try:
+        client = chromadb.PersistentClient(path=CHROMA_PATH)
+        embedding_function = get_embedding_function()
 
-    for chunk in chunks:
-        source = chunk.metadata.get("source")
-        page = chunk.metadata.get("page")
-        current_page_id = f"{source}:{page}"
+        # Separate documents by type
+        game_docs = []
+        platform_docs = []
 
-        if current_page_id == last_page_id:
-            current_chunk_index += 1
-        else:
-            current_chunk_index = 0
+        for doc in documents:
+            source_path = doc.metadata['source']
+            if 'game_rules' in source_path:
+                game_docs.append(doc)
+            elif 'platform_docs' in source_path:
+                platform_docs.append(doc)
 
-        chunk_id = f"{current_page_id}:{current_chunk_index}"
-        last_page_id = current_page_id
-        chunk.metadata["id"] = chunk_id
+        logger.info(f"Found {len(game_docs)} game documents and {len(platform_docs)} platform documents")
 
-    return chunks
+        # Handle game rules documents
+        if game_docs:
+            game_db = Chroma(
+                client=client,
+                collection_name="game_rules",
+                embedding_function=embedding_function,
+            )
+            game_db.add_documents(game_docs)
+            logger.info(f"Added {len(game_docs)} documents to game_rules collection")
+
+        # Handle platform documents
+        if platform_docs:
+            platform_db = Chroma(
+                client=client,
+                collection_name="platform_docs",
+                embedding_function=embedding_function,
+            )
+            platform_db.add_documents(platform_docs)
+            logger.info(f"Added {len(platform_docs)} documents to platform_docs collection")
+
+    except Exception as e:
+        logger.error(f"Error adding documents to Chroma: {e}")
+        logger.error(traceback.format_exc())
+        raise
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="Reset the database.")
-    args = parser.parse_args()
+    """Main function to populate the database"""
+    try:
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--reset", action="store_true", help="Reset the database")
+        args = parser.parse_args()
 
-    if args.reset:
-        print("✨ Clearing Database")
-        if os.path.exists(CHROMA_PATH):
-            shutil.rmtree(CHROMA_PATH)
+        if args.reset:
+            logger.info("✨ Clearing Database")
+            safe_remove_dir_contents(CHROMA_PATH)
 
-    documents = load_documents()
-    chunks = split_documents(documents)
-    add_to_chroma(chunks)
+        # Load and process documents
+        documents = load_documents()
+        chunks = split_documents(documents)
 
+        # Get existing document count
+        try:
+            client = chromadb.PersistentClient(path=CHROMA_PATH)
+            game_collection = client.get_collection("game_rules")
+            platform_collection = client.get_collection("platform_docs")
+            existing_count = len(game_collection.get()['ids']) + len(platform_collection.get()['ids'])
+        except Exception:
+            existing_count = 0
 
-def clear_database():
-    if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
+        logger.info(f"Number of existing documents in DB: {existing_count}")
+        logger.info(f"👉 Adding new documents: {len(chunks)}")
+
+        # Add to database
+        add_to_chroma(chunks)
+        logger.info("✅ Database population completed successfully")
+
+    except Exception as e:
+        logger.error(f"Error in main function: {e}")
+        logger.error(traceback.format_exc())
+        raise
 
 
 if __name__ == "__main__":

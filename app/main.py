@@ -1,3 +1,6 @@
+import asyncio
+asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -25,7 +28,7 @@ origins = [
     "https://mango-sky-053dae803.4.azurestaticapps.net",
     "http://localhost:3000",  # Development environment
     "http://localhost:5173",  # Vite development server
-    "http://localhost:8060"  # Local development
+    "http://localhost:8000"  # Local development
 ]
 
 app.add_middleware(
