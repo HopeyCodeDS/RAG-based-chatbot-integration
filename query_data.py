@@ -21,20 +21,48 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+
+class CustomLlamaAPI:
+    """Wrapper for LlamaAPI to avoid nest_asyncio issues"""
+
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self._api = None
+
+    def _ensure_api(self):
+        """Ensure API instance exists in current context"""
+        if self._api is None:
+            # Create new instance without nest_asyncio
+            import llamaapi.llamaapi
+            # Temporarily patch the __init__ to skip nest_asyncio
+            original_init = llamaapi.llamaapi.LlamaAPI.__init__
+            try:
+                llamaapi.llamaapi.LlamaAPI.__init__ = lambda self, api_key: setattr(self, 'api_key', api_key)
+                self._api = LlamaAPI(self.api_key)
+            finally:
+                llamaapi.llamaapi.LlamaAPI.__init__ = original_init
+        return self._api
+
+    def run(self, *args, **kwargs):
+        """Run API call using current context"""
+        api = self._ensure_api()
+        return api.run(*args, **kwargs)
+
+
 def init_llama_api():
-    """Initialize LlamaAPI with proper event loop handling"""
+    """Initialize custom LlamaAPI wrapper"""
     logger.info(f"Using API Key: {'*' * (len(os.getenv('LLAMA_API_KEY')) - 4)}{os.getenv('LLAMA_API_KEY')[-4:]}")
     try:
         if not os.getenv('LLAMA_API_KEY'):
             raise ValueError("LLAMA_API_KEY not found in environment variables")
-        return LlamaAPI(os.getenv('LLAMA_API_KEY'))
+        return CustomLlamaAPI(os.getenv('LLAMA_API_KEY'))
     except Exception as e:
         logger.error(f"Error initializing LlamaAPI: {str(e)}")
         raise
 
+
 # Initialize LlamaAPI
 llama = init_llama_api()
-
 # Constants
 CHROMA_PATH = "chroma"
 API_TIMEOUT = 30  # seconds
