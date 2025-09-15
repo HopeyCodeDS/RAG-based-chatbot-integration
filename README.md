@@ -2,6 +2,23 @@
 
 The Platform Chatbot is a conversational AI assistant that helps users with various tasks and information related to the platform. It can provide explanations on game rules, answer questions, and guide users through common platform functionalities.
 
+## 🛠️ Tech Stack  
+
+<p align="left">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="50" height="50"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" width="50" height="50"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="50" height="50"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg" width="50" height="50"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/gitlab/gitlab-original.svg" width="50" height="50"/>
+</p> 
+
+- **Language:** Python  
+- **Framework:** FastAPI (or Flask, depending on your implementation)  
+- **Vector Search:** HuggingFace Sentence Transformers  
+- **Containerization:** Docker  
+- **Cloud:** Azure App Service  
+- **CI/CD:** GitLab Pipelines 
+
 ## Features
 
 - **Game Rules Explanations**: The chatbot can explain the rules for a variety of games, including card games, board games, word games, and more.
@@ -16,11 +33,11 @@ To set up the Platform Chatbot locally, follow these steps:
 
 1. Clone the repository:
    ```
-   git clone https://gitlab.com/kdg-ti/integration-5/2024-2025/team7/chatbot.git
+   git clone https://github.com/HopeyCodeDS/RAG-based-chatbot-integration
    ```
 2. Navigate to the project directory:
    ```
-   cd chatbot
+   cd RAG-based-chatbot-integration
    ```
 3. Create a virtual environment and activate it:
    ```
@@ -69,23 +86,15 @@ chatbot/
 - `requirements.txt`: Lists the Python dependencies required for the project.
 - `.gitlab-ci.yml`: Defines the GitLab CI/CD pipeline for building and deploying the application.
 
-## Usage
+## 💻 Usage
 
-To use the Platform Chatbot, simply navigate to the platform's website and look for the chatbot interface. You can start a conversation by typing your message, and the chatbot will respond with the relevant information.
+Once running, access the chatbot via the platform UI.
+Simply type your query (e.g., “What are the rules of chess?”), and the chatbot responds.
 
-## Deployment
+## ☁️ Deployment
 
-The Platform Chatbot is deployed on the Azure App Service, using a Docker container. The deployment process is automated through a GitLab CI/CD pipeline, which handles the building and deploying of the Docker image.
+Hosted on Azure App Service via Docker container
 
-## Contributing
+CI/CD with GitLab:
 
-If you would like to contribute to the development of the Platform Chatbot, please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and test them thoroughly.
-4. Submit a pull request, providing a detailed description of the changes you've made.
-
-## Contact
-
-Team 7 - Integration 5
+On commit → build Docker image → push → deploy automatically
