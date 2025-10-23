@@ -13,7 +13,7 @@ The Platform Chatbot is a conversational AI assistant that helps users with vari
 </p> 
 
 - **Language:** Python  
-- **Framework:** FastAPI (or Flask, depending on your implementation)  
+- **Framework:** FastAPI
 - **Vector Search:** HuggingFace Sentence Transformers  
 - **Containerization:** Docker  
 - **Cloud:** Azure App Service  
