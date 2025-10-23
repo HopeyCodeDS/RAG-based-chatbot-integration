@@ -1,8 +1,8 @@
 # Platform Chatbot
 
-The Platform Chatbot is a conversational AI assistant that helps users with various tasks and information related to the platform. It can provide explanations on game rules, answer questions, and guide users through common platform functionalities.
+The Platform Chatbot is a conversational AI assistant that helps users with various tasks and information related to the platform. This is specialized service within the larger Bandit Games ecosystem, designed to provide explanations on game rules, answer questions, and guide users through common platform functionalities. The live/deployed functionality of this ml-analytics microservice can be viewed in the frontend(readme.md section) of the integrated project found [here](https://github.com/HopeyCodeDS/bandit-games-platform-frontend).
 
-## 🛠️ Tech Stack  
+## Tech Stack  
 
 <p align="left">
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="50" height="50"/>
@@ -86,12 +86,12 @@ chatbot/
 - `requirements.txt`: Lists the Python dependencies required for the project.
 - `.gitlab-ci.yml`: Defines the GitLab CI/CD pipeline for building and deploying the application.
 
-## 💻 Usage
+## Usage
 
 Once running, access the chatbot via the platform UI.
 Simply type your query (e.g., “What are the rules of chess?”), and the chatbot responds.
 
-## ☁️ Deployment
+## Deployment
 
 Hosted on Azure App Service via Docker container
 
